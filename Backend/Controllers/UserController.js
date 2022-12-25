@@ -144,9 +144,78 @@ const getUserProfile = asyncHandler(async (req, res) => {
     throw new Error('User not found')
   }
 })
+
+//Get login status
+const getLoginStatus = asyncHandler(async (req, res) => {
+  const token = req.cookies.token
+  if (!token) {
+    return res.json(false)
+  }
+  const verify = jwt.verify(token, process.env.JWT_SECRET)
+  if (verify) {
+    return res.json(true)
+  }
+  return res.json(false)
+})
+
+//Update profile
+const updateProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id)
+  if (user) {
+    const { _id, name, email, photo, phone, bio } = user
+    user.email = email
+    user.name = req.body.name || name
+    user.phone = req.body.phone || phone
+    user.photo = req.body.photo || photo
+    user.bio = req.body.bio || bio
+    const updatedUser = await user.save()
+    res.status(201).json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      bio: updatedUser.bio,
+      phone: updatedUser.phone,
+      photo: updatedUser.photo
+    })
+  } else {
+    throw new Error('credentials are not correct')
+  }
+})
+
+//Change password
+const changePassword = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id)
+  const { oldPassword, newPassword } = req.body
+
+  if (!user) {
+    throw new Error('User not Found')
+  }
+  if (!oldPassword || !newPassword) {
+    res.status(401).json({
+      message: 'Please enter required fields'
+    })
+  } else {
+    const isPasswordCorrect = await bcrypt.compare(oldPassword, user.password)
+    if (user && isPasswordCorrect) {
+      user.password = newPassword
+      await user.save()
+      res.status(200).json({
+        message: 'password changed succesfully'
+      })
+    } else {
+      throw new Error(
+        'your Old password is not correct. Please Enter correct Old Password'
+      )
+    }
+  }
+})
+
 module.exports = {
   registerUser,
   loginUser,
   logoutUser,
-  getUserProfile
+  getUserProfile,
+  getLoginStatus,
+  updateProfile,
+  changePassword
 }

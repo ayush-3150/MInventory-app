@@ -14,11 +14,8 @@ const protectMiddleware = asyncHandler(async (req, res, next) => {
     }
     //Verify token
     const verify = jwt.verify(token, process.env.JWT_SECRET)
-    console.log('verify ' + verify)
     //Get all the user detail for given id except password
     const user = await User.findById(verify.id).select('-password')
-
-    console.log('user ' + user)
 
     if (!user) {
       console.log('not user')
